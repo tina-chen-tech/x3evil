@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X-3VIL</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600;700;800;900&family=Noto+Sans+SC:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;scroll-padding-top:0}
+    body{
+      font-family:'Outfit','Noto Sans SC',system-ui,-apple-system,sans-serif;
+      background:transparent;color:#fafafa;overflow-x:hidden;cursor:none;
+    }
+    .page-wrap{position:relative;z-index:1;background:rgba(5,5,5,.5)}
+    ::selection{background:rgba(6,182,212,.5);color:#050505}
+
+    :root{
+      --red:#e11d48;--cyan:#06b6d4;--purple:#8b5cf6;--gold:#f59e0b;--pink:#ec4899;
+      --bg:#050505;--bg2:#0a0a0a;--surface:#111;--card:#181818;
+      --text:#fafafa;--text2:#a3a3a3;--text3:#525252;
+    }
+
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
+
+    .container{max-width:1280px;margin:0 auto;padding:0 32px}
+    @media(max-width:768px){.container{padding:0 20px}}
+
+    .spacer{padding:clamp(100px,14vh,160px) 0}
+    .section-eyebrow{
+      font-family:'JetBrains Mono',monospace;font-size:11px;
+      letter-spacing:.08em;color:var(--cyan);margin-bottom:16px;
+      display:flex;align-items:center;gap:12px;
+    }
+    .section-eyebrow::before{content:'';width:32px;height:1px;background:var(--cyan)}
+    .section-title{
+      font-size:clamp(2.4rem,6vw,4.5rem);font-weight:800;line-height:.92;
+      letter-spacing:-.04em;color:var(--text);
+    }
+    .section-sub{
+      font-size:15px;line-height:1.75;color:var(--text2);font-weight:300;max-width:48ch;
+    }
+
+    .noise-fixed{
+      position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.02;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:256px 256px;mix-blend-mode:overlay;
+    }
+
+    .cursor-dot{
+      position:fixed;width:8px;height:8px;border-radius:50%;
+      background:var(--cyan);pointer-events:none;z-index:99999;
+      transition:transform .08s linear;mix-blend-mode:difference;
+      transform:translate(-50%,-50%);
+    }
+    .cursor-ring{
+      position:fixed;width:40px;height:40px;border-radius:50%;
+      border:1px solid rgba(6,182,212,.3);pointer-events:none;z-index:99998;
+      transition:all .12s cubic-bezier(.16,1,.3,1);transform:translate(-50%,-50%);
+    }
+    .cursor-ring.grow{width:60px;height:60px;border-color:rgba(225,29,72,.4);background:rgba(225,29,72,.05)}
+    @media(hover:none){body{cursor:auto}.cursor-dot,.cursor-ring{display:none}}
+
+    nav{
+      position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:100;
+      padding:10px 24px;border-radius:999px;
+      background:rgba(5,5,5,.5);backdrop-filter:blur(20px) saturate(1.3);
+      -webkit-backdrop-filter:blur(20px) saturate(1.3);
+      border:1px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;gap:32px;transition:.4s;
+    }
+    nav .logo{font-size:16px;font-weight:800;letter-spacing:-.03em;text-decoration:none;color:var(--text);display:flex;align-items:center;gap:6px}
+    nav .logo .logo-accent{width:5px;height:5px;border-radius:50%;background:var(--cyan);display:inline-block;animation:pulse-dot 2s ease-in-out infinite}
+    @keyframes pulse-dot{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.6)}}
+    nav a:not(.logo){
+      font-size:12px;color:var(--text2);text-decoration:none;font-weight:500;transition:color .3s;
+    }
+    nav a:not(.logo):hover{color:var(--text)}
+    .mini-player{
+      display:flex;align-items:center;gap:8px;margin-left:8px;
+      padding:6px 14px;border-radius:999px;
+      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+      cursor:pointer;transition:all .3s;flex-shrink:0;
+    }
+    .mini-player:hover{background:rgba(255,255,255,.08);border-color:var(--pink)}
+    .mini-player .mp-icon{font-size:10px;color:var(--pink);line-height:1}
+    .mini-player .mp-label{font-size:10px;color:var(--text2);letter-spacing:.04em;white-space:nowrap}
+    .mini-player .mp-dot{width:4px;height:4px;border-radius:50%;background:var(--text3);transition:all .3s}
+    .mini-player .mp-dot.playing{background:var(--pink);animation:mpPulse 1s ease-in-out infinite}
+    @keyframes mpPulse{0%,100%{opacity:1}50%{opacity:.3}}
+    @media(max-width:768px){.mini-player{display:none}}
+    @media(max-width:768px){
+      nav{top:16px;padding:8px 16px;gap:16px;width:calc(100% - 32px);justify-content:space-between}
+      nav .nav-links{display:none}
+    }
+
+    /* ═══════ HERO ═══════ */
+    #hero{
+      position:relative;min-height:100dvh;display:flex;flex-direction:column;
+      justify-content:center;overflow:hidden;
+    }
+    .bg-fixed{
+      position:fixed;inset:0;z-index:0;
+      background:url('images/space-bg.jpg') center center/cover no-repeat;
+      animation:heroZoom 20s ease-in-out infinite alternate;
+    }
+    .bg-fixed::after{
+      content:'';position:absolute;inset:0;background:rgba(0,0,0,.65);
+    }
+    @keyframes heroZoom{0%{transform:scale(1)}100%{transform:scale(1.08)}}
+    #hero .bg-grad{
+      position:absolute;inset:0;z-index:1;pointer-events:none;
+      background:radial-gradient(ellipse 80% 50% at 80% 20%, rgba(225,29,72,.12) 0%,transparent 55%),
+                 radial-gradient(ellipse 60% 50% at 20% 80%, rgba(6,182,212,.06) 0%,transparent 50%);
+    }
+    .hero-grid-overlay{
+      position:absolute;inset:0;z-index:2;opacity:.12;pointer-events:none;
+      background-image:linear-gradient(rgba(255,255,255,.008) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.008) 1px,transparent 1px);
+      background-size:40px 40px;
+    }
+    .hero-inner{position:relative;z-index:3;padding-top:80px}
+    .hero-kine{
+      font-family:'JetBrains Mono',monospace;font-size:clamp(10px,1vw,13px);
+      letter-spacing:.4em;text-transform:uppercase;color:var(--cyan);font-weight:400;
+      margin-bottom:24px;overflow:hidden;
+    }
+    .hero-kine .char{display:inline-block;animation:charIn .6s cubic-bezier(.16,1,.3,1) both}
+    @keyframes charIn{0%{opacity:0;transform:translateY(60%) rotateX(25deg)}100%{opacity:1;transform:translateY(0) rotateX(0)}}
+    .hero-title-wrap{position:relative;margin-bottom:32px}
+    .hero-title{
+      font-size:clamp(4.5rem,18vw,14rem);font-weight:900;line-height:.85;
+      letter-spacing:-.07em;position:relative;display:inline-block;
+    }
+    .hero-title .t1{
+      background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.5));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .hero-title .glitch-l,.hero-title .glitch-l2{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+    .hero-title .glitch-l{color:var(--red);-webkit-text-fill-color:var(--red);clip-path:inset(0 0 70% 0);transform:translate(-2px,0);animation:glitch1 3.5s ease-in-out infinite}
+    .hero-title .glitch-l2{color:var(--cyan);-webkit-text-fill-color:var(--cyan);clip-path:inset(70% 0 0 0);transform:translate(3px,0);animation:glitch2 3.5s ease-in-out infinite}
+    @keyframes glitch1{0%,86%,100%{transform:translate(0)}88%{transform:translate(-4px,2px)}90%{transform:translate(2px,-1px)}92%{transform:translate(-1px,2px)}94%{transform:translate(3px,-2px)}96%{transform:translate(-3px,0)}98%{transform:translate(2px,1px)}}
+    @keyframes glitch2{0%,86%,100%{transform:translate(0)}88%{transform:translate(5px,-2px)}90%{transform:translate(-2px,3px)}92%{transform:translate(4px,0)}94%{transform:translate(-3px,-2px)}96%{transform:translate(2px,1px)}98%{transform:translate(-4px,-1px)}}
+    .hero-sub{
+      font-size:clamp(1rem,1.5vw,1.2rem);font-weight:300;
+      max-width:520px;line-height:1.7;margin-bottom:40px;min-height:1.8em;color:var(--text2);
+    }
+    .hero-sub .cursor-blink{display:inline-block;width:2px;height:1em;background:var(--cyan);vertical-align:text-bottom;animation:blink .6s step-end infinite;margin-left:2px}
+    @keyframes blink{50%{opacity:0}}
+    .hero-split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .hero-art{position:relative;height:100%;min-height:400px;display:flex;align-items:center;justify-content:center}
+    .hero-art .ring{
+      position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.04);
+      animation:pulse-ring 8s ease-in-out infinite;
+    }
+    .hero-art .ring:nth-child(1){width:340px;height:340px;animation-delay:0s}
+    .hero-art .ring:nth-child(2){width:240px;height:240px;animation-delay:-2.5s;border-color:rgba(225,29,72,.06)}
+    .hero-art .ring:nth-child(3){width:150px;height:150px;animation-delay:-5s;border-color:rgba(6,182,212,.08)}
+    .hero-art .ring:nth-child(4){width:80px;height:80px;animation-delay:-1.2s;border-color:rgba(245,158,11,.06)}
+    @keyframes pulse-ring{0%,100%{transform:scale(1);opacity:.2}50%{transform:scale(1.15);opacity:.5}}
+    .hero-art .center-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 30px rgba(6,182,212,.5),0 0 60px rgba(6,182,212,.15);animation:pulse-center 2s ease-in-out infinite}
+    @keyframes pulse-center{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.8);opacity:1}}
+    .hero-art .r-line{position:absolute;width:1px;height:200px;background:linear-gradient(transparent,rgba(225,29,72,.12),transparent);transform-origin:bottom center;animation:spin 25s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hero-art .r-line2{position:absolute;width:1px;height:140px;background:linear-gradient(transparent,rgba(6,182,212,.08),transparent);transform-origin:bottom center;animation:spin 18s linear infinite reverse;bottom:30%}
+    .hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:40px}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;padding:14px 28px;
+      border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.02em;
+      text-decoration:none;transition:all .35s cubic-bezier(.16,1,.3,1);
+      cursor:pointer;border:none;font-family:inherit;
+    }
+    .btn-primary{background:var(--red);color:#fff;box-shadow:0 0 30px rgba(225,29,72,.2)}
+    .btn-primary:hover{background:#f43f5e;transform:translateY(-3px);box-shadow:0 12px 40px rgba(225,29,72,.35)}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.1)}
+    .btn-ghost:hover{background:rgba(255,255,255,.04);border-color:var(--cyan);transform:translateY(-3px);box-shadow:0 0 30px rgba(6,182,212,.1)}
+    @media(max-width:900px){
+      .hero-split{grid-template-columns:1fr}
+      .hero-art{display:none}
+      .hero-title{font-size:clamp(3rem,20vw,6rem)}
+    }
+
+    /* ═══════ MARQUEE ═══════ */
+    #reel{overflow:hidden;padding:0}
+    .reel-track{display:flex;gap:0;width:max-content;animation:reelScroll 50s linear infinite}
+    .reel-track:hover{animation-play-state:paused}
+    .reel-item{
+      display:flex;align-items:center;gap:40px;padding:0 40px;
+      font-size:clamp(3rem,6vw,5.5rem);font-weight:800;letter-spacing:-.04em;
+      white-space:nowrap;color:rgba(255,255,255,.025);
+    }
+    .reel-item .rd{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);vertical-align:middle;opacity:.4}
+    .reel-item strong{color:rgba(255,255,255,.05)}
+    @keyframes reelScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+    /* ═══════ ABOUT ═══════ */
+    .about-outer{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .about-text .big-quote{
+      font-size:clamp(1.8rem,3vw,2.8rem);font-weight:700;line-height:1.15;
+      letter-spacing:-.02em;margin-bottom:24px;
+      background:linear-gradient(135deg,#fff 30%,rgba(255,255,255,.5));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .about-text .body-text{font-size:14px;line-height:1.85;color:var(--text2);font-weight:300;margin-bottom:16px}
+    .about-text .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+    .about-text .tags span{
+      padding:6px 16px;border-radius:999px;font-size:11px;font-weight:500;
+      background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+      color:var(--text2);letter-spacing:.02em;
+    }
+    .about-text .tags span:nth-child(1){border-color:rgba(6,182,212,.2);color:var(--cyan)}
+    @media(max-width:900px){.about-outer{grid-template-columns:1fr;gap:48px}}
+
+    /* ═══════ TATTOO ═══════ */
+    .gallery-bento{
+      display:grid;grid-template-columns:1fr 1fr 1fr 1fr;grid-auto-flow:dense;gap:6px;
+    }
+    .gallery-bento .cell{
+      position:relative;border-radius:6px;overflow:hidden;
+      aspect-ratio:3/4;background:var(--card);
+      transition:all .5s cubic-bezier(.16,1,.3,1);cursor:pointer;
+    }
+    .gallery-bento .cell:hover{z-index:3;transform:scale(1.03)}
+    .gallery-bento .cell img{
+      width:100%;height:100%;object-fit:cover;display:block;
+      transition:transform .7s cubic-bezier(.16,1,.3,1);
+    }
+    .gallery-bento .cell:hover img{transform:scale(1.08)}
+    .gallery-bento .cell .ov{
+      position:absolute;inset:0;
+      background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 40%);
+      opacity:0;transition:opacity .4s;display:flex;align-items:flex-end;padding:12px;
+    }
+    .gallery-bento .cell:hover .ov{opacity:1}
+    .gallery-bento .cell .ov span{font-size:10px;font-weight:500;color:#fff;letter-spacing:.04em}
+    .gallery-bento .cell:nth-child(8n+1){grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+    .gallery-bento .cell:nth-child(4n+2){aspect-ratio:1}
+    .gallery-bento .cell:nth-child(4n+4){grid-column:span 2;aspect-ratio:16/9}
+    @media(max-width:1024px){
+      .gallery-bento{grid-template-columns:1fr 1fr}
+      .gallery-bento .cell:nth-child(8n+1),
+      .gallery-bento .cell:nth-child(4n+4){grid-column:span 2;aspect-ratio:16/9;grid-row:span 1}
+    }
+    @media(max-width:600px){
+      .gallery-bento{grid-template-columns:1fr;gap:4px}
+      .gallery-bento .cell:nth-child(8n+1),
+      .gallery-bento .cell:nth-child(4n+4){grid-column:span 1;aspect-ratio:3/4}
+    }
+
+    /* ═══════ ART ═══════ */
+    .art-scroll-wrap{position:relative;overflow:hidden;mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent);-webkit-mask-image:linear-gradient(to right,transparent,black 48px,black calc(100% - 48px),transparent)}
+    .art-scroll{display:flex;gap:16px;width:max-content;animation:artScroll 60s linear infinite}
+    .art-scroll.paused{animation-play-state:paused}
+    .art-scroll .as-card{
+      flex:0 0 auto;width:240px;border-radius:12px;overflow:hidden;cursor:pointer;
+      background:var(--surface);border:1px solid rgba(255,255,255,.04);
+      transition:all .4s cubic-bezier(.16,1,.3,1);
+    }
+    .art-scroll .as-card:hover{transform:translateY(-6px) scale(1.02);border-color:var(--cyan);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+    .art-scroll .as-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+    @keyframes artScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .lightbox{
+      position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);
+      backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+      display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .4s;
+    }
+    .lightbox.open{display:flex;opacity:1}
+    .lightbox .lb-close{
+      position:absolute;top:24px;right:24px;z-index:2;
+      width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+      background:rgba(255,255,255,.08);color:#fff;font-size:18px;
+      display:flex;align-items:center;justify-content:center;transition:background .3s;font-family:inherit;
+    }
+    .lightbox .lb-close:hover{background:rgba(255,255,255,.15)}
+    .lightbox .lb-img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;transform:scale(.9);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+    .lightbox.open .lb-img{transform:scale(1)}
+    .lightbox .lb-nav{
+      position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+      width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
+      background:rgba(255,255,255,.06);color:#fff;font-size:20px;
+      display:flex;align-items:center;justify-content:center;transition:background .3s;font-family:inherit;
+    }
+    .lightbox .lb-nav:hover{background:rgba(255,255,255,.12)}
+    .lightbox .lb-prev{left:20px}
+    .lightbox .lb-next{right:20px}
+    .lightbox .lb-counter{
+      position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+      font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;
+    }
+    @media(max-width:768px){.art-scroll .as-card{width:180px}}
+
+    /* ═══════ STUDIO ═══════ */
+    .studio-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .studio-text p{font-size:14px;line-height:1.85;color:var(--text2);font-weight:300;margin-bottom:14px}
+    .studio-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .studio-grid .studio-hero{grid-column:span 2;border-radius:10px;overflow:hidden;margin-bottom:4px}
+    .studio-grid .studio-hero img{width:100%;display:block;object-fit:cover;object-position:center 20%;aspect-ratio:16/7;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+    .studio-grid .studio-hero:hover img{transform:scale(1.03)}
+    .studio-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:10px;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+    .studio-grid img:hover{transform:scale(1.03)}
+    @media(max-width:900px){.studio-inner{grid-template-columns:1fr;gap:40px}}
+
+    /* ═══════ STYLE ═══════ */
+    #style{overflow:hidden}
+    .style-intro{margin-bottom:48px}
+    .lookbook{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding-bottom:40px}
+    .lookbook .lb-card{
+      position:relative;border-radius:12px;overflow:hidden;cursor:pointer;
+      background:var(--surface);border:1px solid rgba(255,255,255,.04);
+      transition:all .5s cubic-bezier(.16,1,.3,1);
+      transform:rotate(var(--rot,0deg)) translateY(var(--y,0));
+    }
+    .lookbook .lb-card:hover{z-index:5;transform:rotate(0deg) scale(1.05);border-color:var(--cyan);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .lookbook .lb-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;clip-path:inset(0 0 10% 0)}
+    .lookbook .lb-card .lb-year{
+      position:absolute;bottom:0;left:0;right:0;padding:40px 16px 14px;
+      background:linear-gradient(to top,rgba(0,0,0,.85),transparent);
+      font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--cyan);
+      opacity:0;transition:opacity .4s;
+    }
+    .lookbook .lb-card:hover .lb-year{opacity:1}
+    .lookbook .lb-card:nth-child(1){--rot:-1.5deg;--y:-8px}
+    .lookbook .lb-card:nth-child(2){--rot:2deg;--y:12px}
+    .lookbook .lb-card:nth-child(3){--rot:-.8deg;--y:-4px}
+    .lookbook .lb-card:nth-child(4){--rot:1.2deg;--y:16px}
+    .lookbook .lb-card:nth-child(5){--rot:-2deg;--y:-12px}
+    .lookbook .lb-card:nth-child(6){--rot:1.5deg;--y:8px}
+    .lookbook .lb-card:nth-child(7){--rot:-1deg;--y:-6px}
+    .lookbook .lb-card:nth-child(8){--rot:2.2deg;--y:14px}
+    .lookbook .lb-card:nth-child(9){--rot:-1.8deg;--y:-10px}
+    @media(max-width:768px){.lookbook{grid-template-columns:1fr 1fr;gap:12px}
+      .lookbook .lb-card:nth-child(n){margin-top:0;--rot:0deg;--y:0}}
+
+    /* ═══════ VINYL ═══════ */
+    #vinyl{overflow:hidden}
+    .vinyl-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .vinyl-player{position:relative;width:100%;max-width:320px;margin:0 auto}
+    .vinyl-player .record{
+      width:100%;aspect-ratio:1;border-radius:50%;
+      background:#111;border:2px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;justify-content:center;
+      animation:spinRecord 4s linear infinite;
+      box-shadow:0 0 40px rgba(0,0,0,.5),inset 0 0 60px rgba(0,0,0,.3);
+      position:relative;
+    }
+    .vinyl-player .record::before{content:'';position:absolute;inset:8%;border-radius:50%;border:1px solid rgba(255,255,255,.03)}
+    .vinyl-player .record::after{content:'';position:absolute;inset:18%;border-radius:50%;border:1px solid rgba(255,255,255,.02)}
+    .vinyl-player .record .label{
+      width:28%;height:28%;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:8px;font-weight:700;color:#fff;letter-spacing:.1em;text-transform:uppercase;
+      text-align:center;line-height:1.3;box-shadow:0 0 10px rgba(0,0,0,.5);
+      font-family:'JetBrains Mono',monospace;
+    }
+    .vinyl-player .record.paused{animation-play-state:paused}
+    @keyframes spinRecord{to{transform:rotate(360deg)}}
+    .vinyl-player .record .label.c1{background:var(--red)}
+    .vinyl-player .record .label.c2{background:var(--purple)}
+    .vinyl-player .record .label.c3{background:var(--gold)}
+    .vinyl-player .stack{display:flex;justify-content:center;gap:10px;margin-top:20px}
+    .vinyl-player .stack .s{
+      width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.08);
+      cursor:pointer;transition:all .3s;opacity:.4;
+    }
+    .vinyl-player .stack .s.active{opacity:1;transform:scale(1.15)}
+    .vinyl-player .stack .s:nth-child(1){background:var(--red)}
+    .vinyl-player .stack .s:nth-child(2){background:var(--purple)}
+    .vinyl-player .stack .s:nth-child(3){background:var(--gold)}
+    .vinyl-text .vinyl-quote{
+      font-size:clamp(1.2rem,2vw,1.8rem);font-weight:600;line-height:1.3;
+      letter-spacing:-.02em;margin-bottom:16px;
+      background:linear-gradient(135deg,var(--pink),var(--cyan));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .vinyl-text .vinyl-text-body{font-size:14px;line-height:1.8;color:var(--text2);font-weight:300;margin-bottom:4px}
+    .vinyl-text .vinyl-track{font-size:13px;color:var(--text3);margin-top:20px;font-family:'JetBrains Mono',monospace}
+    .vinyl-text .vinyl-track .song{color:var(--text)}
+    .vinyl-toggle{
+      display:inline-flex;align-items:center;gap:8px;margin-top:16px;
+      padding:10px 24px;border-radius:999px;border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);color:var(--text2);font-size:12px;
+      cursor:pointer;transition:all .3s;font-family:inherit;letter-spacing:.05em;
+    }
+    .vinyl-toggle:hover{background:rgba(255,255,255,.08);border-color:var(--pink);color:var(--text)}
+    @media(max-width:768px){.vinyl-inner{grid-template-columns:1fr;gap:40px;text-align:center}
+      .vinyl-player{max-width:220px}}
+
+    /* ═══════ CONNECT ═══════ */
+    #connect .connect-outer{text-align:center}
+    .connect-title{
+      font-size:clamp(2.5rem,6vw,5rem);font-weight:900;line-height:.9;
+      letter-spacing:-.04em;margin-bottom:16px;color:var(--text);
+    }
+    .connect-title .hl{color:var(--cyan)}
+    .connect-sub{color:var(--text2);font-size:15px;max-width:500px;margin:0 auto 48px;line-height:1.7}
+    .social-grid{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:48px}
+    .social-card{
+      display:flex;flex-direction:column;align-items:center;gap:12px;
+      padding:32px 40px;border-radius:16px;min-width:140px;
+      background:var(--surface);border:1px solid rgba(255,255,255,.06);
+      text-decoration:none;color:var(--text);cursor:pointer;transition:all .35s cubic-bezier(.16,1,.3,1);
+    }
+    .social-card:hover{transform:translateY(-6px);border-color:rgba(6,182,212,.2);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+    .social-card .s-icon{font-size:24px;line-height:1}
+    .social-card .s-name{font-size:13px;font-weight:600}
+    .social-card .s-handle{font-size:11px;color:var(--text3)}
+    .connect-location{
+      display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:999px;
+      background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+      font-size:13px;color:var(--text2);
+    }
+    footer{padding:40px 0;border-top:1px solid rgba(255,255,255,.04);text-align:center;font-size:12px;color:var(--text3)}
+
+    .rv{opacity:0;transform:translateY(50px);transition:all .9s cubic-bezier(.16,1,.3,1)}
+    .rv.in{opacity:1;transform:translateY(0)}
+    .rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
+    .rv-4{transition-delay:.4s}.rv-5{transition-delay:.5s}.rv-6{transition-delay:.6s}
+
+    @media(prefers-reduced-motion:reduce){
+      .rv{opacity:1;transform:none}
+      .hero-title .glitch-l,.hero-title .glitch-l2{animation:none;display:none}
+      .hero-kine .char{animation:none;opacity:1}
+      .reel-track{animation:none}
+      .hero-art .ring,.hero-art .r-line,.hero-art .r-line2{animation:none}
+      .art-scroll{animation:none!important;overflow-x:auto}
+      .vinyl-player .record{animation:none}
+      .cursor-dot,.cursor-ring{display:none}body{cursor:auto}
+    }
+  </style>
+</head>
+<body>
+<div class="bg-fixed"></div>
+<div class="page-wrap">
+<div class="noise-fixed"></div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<nav>
+  <a href="#hero" class="logo">X-3VIL <span class="logo-accent"></span></a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#tattoo">Tattoo</a>
+    <a href="#art">Art</a>
+    <a href="#studio">Studio</a>
+    <a href="#style">Style</a>
+    <a href="#vinyl">Vinyl</a>
+    <a href="#connect">Connect</a>
+  </div>
+  <div class="mini-player" id="miniPlayer" title="Now playing: First Love">
+    <span class="mp-icon">♪</span>
+    <span class="mp-label" id="mpLabel">First Love</span>
+    <span class="mp-dot" id="mpDot"></span>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="bg-grad"></div>
+  <div class="hero-grid-overlay"></div>
+  <div class="hero-inner container">
+    <div class="hero-kine" id="kine"></div>
+    <div class="hero-split">
+      <div>
+        <div class="hero-title-wrap">
+          <div class="hero-title">
+            <span class="t1">X-3VIL</span>
+            <span class="glitch-l">X-3VIL</span>
+            <span class="glitch-l2">X-3VIL</span>
+          </div>
+        </div>
+        <div class="hero-sub" id="heroSub"><span></span><span class="cursor-blink"></span></div>
+        <div class="hero-cta">
+          <a href="#tattoo" class="btn btn-primary">View work</a>
+          <a href="#connect" class="btn btn-ghost">Connect</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
+        <div class="r-line" style="transform:rotate(0deg)"></div>
+        <div class="r-line" style="transform:rotate(45deg)"></div>
+        <div class="r-line" style="transform:rotate(90deg)"></div>
+        <div class="r-line" style="transform:rotate(135deg)"></div>
+        <div class="r-line2" style="transform:rotate(22deg)"></div>
+        <div class="r-line2" style="transform:rotate(112deg)"></div>
+        <div class="center-dot"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reel">
+  <div class="reel-track">
+    <div class="reel-item"><span class="rd"></span> DRAW <strong>·</strong> 描く <span class="rd"></span> TATTOO <strong>·</strong> 刺青 <span class="rd"></span> ANIME <strong>·</strong> アニメ <span class="rd"></span> INK <strong>·</strong> 墨 <span class="rd"></span> TOKYO <strong>·</strong> 杭州</div>
+    <div class="reel-item"><span class="rd"></span> DRAW <strong>·</strong> 描く <span class="rd"></span> TATTOO <strong>·</strong> 刺青 <span class="rd"></span> ANIME <strong>·</strong> アニメ <span class="rd"></span> INK <strong>·</strong> 墨 <span class="rd"></span> TOKYO <strong>·</strong> 杭州</div>
+  </div>
+</section>
+
+<section id="about" class="spacer">
+  <div class="container about-outer">
+    <div class="about-text">
+      <div class="rv"><div class="section-eyebrow">About</div></div>
+      <div class="big-quote rv rv-1">Ink flows from two hands: one holds the machine, the other holds the brush.</div>
+      <div class="body-text rv rv-2">X-3VIL is an artist based in Hangzhou... Between sessions, he draws. Scrolls, mostly: hand-drawn anime character scrolls that unroll across meters of paper.</div>
+      <div class="body-text rv rv-3">Influenced by Japanese irezumi, cyberpunk, and the endless character designs that come out of the anime industry.</div>
+      <div class="tags rv rv-4">
+        <span>Anime illustration</span>
+        <span>Tattoo artist</span>
+        <span>Hand-drawn scrolls</span>
+        <span>Irezumi fusion</span>
+      </div>
+    </div>
+    <div>
+      <div class="rv rv-3" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border-radius:12px;overflow:hidden">
+        <img src="images/画画中的人 (2).jpg" alt="X-3VIL at work" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block" loading="lazy" />
+        <img src="images/画画中的人 (3).jpg" alt="X-3VIL drawing" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tattoo" class="spacer" style="padding-top:0">
+  <div class="container">
+    <div class="rv" style="margin-bottom:48px">
+      <div class="section-eyebrow">Tattoo work</div>
+      <h2 class="section-title">Skin as Canvas</h2>
+    </div>
+  </div>
+  <div class="container">
+    <div class="gallery-bento">
+      <div class="cell rv"><img src="images/纹身图 (1).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-1"><img src="images/纹身图 (2).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-2"><img src="images/纹身图 (3).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-1"><img src="images/纹身图 (4).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-2"><img src="images/纹身图 (5).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-3"><img src="images/纹身图 (6).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-4"><img src="images/纹身图 (7).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-5"><img src="images/纹身图 (8).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv"><img src="images/纹身图 (9).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-1"><img src="images/纹身图 (10).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-2"><img src="images/纹身图 (11).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv"><img src="images/纹身图 (12).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-1"><img src="images/纹身图 (13).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-2"><img src="images/纹身图 (14).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+      <div class="cell rv rv-3"><img src="images/纹身图 (15).jpg" alt="" loading="lazy" /><div class="ov"><span>Tattoo</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="art" class="spacer" style="padding-top:0">
+  <div class="container">
+    <div class="rv" style="margin-bottom:48px">
+      <h2 class="section-title">Brush &amp; Line</h2>
+      <p class="section-sub" style="margin-top:12px">Hand-drawn anime character scrolls: meters of paper, single continuous compositions.</p>
+    </div>
+  </div>
+  <div class="container" style="max-width:100%;padding:0 24px">
+    <div class="art-scroll-wrap rv" id="artScrollWrap">
+      <div class="art-scroll" id="artScroll">
+        <div class="as-card"><img src="images/画作 (1).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (2).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (3).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (4).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (5).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (6).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (7).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (8).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (9).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (10).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (11).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (12).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (13).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (14).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (15).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (1).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (2).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (3).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (4).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (5).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (6).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (7).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (8).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (9).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (10).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (11).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (12).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (13).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (14).jpg" alt="" loading="lazy" /></div>
+        <div class="as-card"><img src="images/画作 (15).jpg" alt="" loading="lazy" /></div>
+      </div>
+    </div>
+  </div>
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" id="lbClose">✕</button>
+    <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+    <img class="lb-img" id="lbImg" src="" alt="" />
+    <button class="lb-nav lb-next" id="lbNext">›</button>
+    <div class="lb-counter" id="lbCounter"></div>
+  </div>
+</section>
+
+<section id="studio" class="spacer" style="padding-top:0">
+  <div class="container studio-inner">
+    <div class="rv">
+      <div class="section-eyebrow">Studio</div>
+      <h2 class="section-title">The Workspace</h2>
+      <div class="studio-text" style="margin-top:20px">
+        <p>Every piece starts here — a quiet space in Hangzhou where reference boards cover the walls.</p>
+        <p>Natural light by day, warm lamplight by night. The studio is an extension of the creative process.</p>
+      </div>
+    </div>
+    <div class="rv rv-1">
+      <div class="studio-grid" id="studioGrid">
+        <div class="studio-hero"><img src="images/工作室.jpg" alt="Studio" loading="lazy" /></div>
+        <img src="images/工作室 (2).jpg" alt="Studio" loading="lazy" />
+        <img src="images/工作室 (3).jpg" alt="Studio" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="style" class="spacer" style="padding-top:0">
+  <div class="container">
+    <div class="rv style-intro">
+      <div class="section-eyebrow">Style evolution</div>
+      <h2 class="section-title">Looks Through the Years</h2>
+    </div>
+  </div>
+  <div class="container">
+    <div class="lookbook rv" id="lookbook">
+      <div class="lb-card"><img src="images/时尚-201805.jpg" alt="" loading="lazy" /><div class="lb-year">2018</div></div>
+      <div class="lb-card"><img src="images/时尚-201905.jpg" alt="" loading="lazy" /><div class="lb-year">2019</div></div>
+      <div class="lb-card"><img src="images/时尚-202006.jpg" alt="" loading="lazy" /><div class="lb-year">2020</div></div>
+      <div class="lb-card"><img src="images/时尚-202010.jpg" alt="" loading="lazy" /><div class="lb-year">Late 2020</div></div>
+      <div class="lb-card"><img src="images/时尚-202101.jpg" alt="" loading="lazy" /><div class="lb-year">2021</div></div>
+      <div class="lb-card"><img src="images/时尚-202106.jpg" alt="" loading="lazy" /><div class="lb-year">Mid 2021</div></div>
+      <div class="lb-card"><img src="images/时尚-202110.jpg" alt="" loading="lazy" /><div class="lb-year">Late 2021</div></div>
+      <div class="lb-card"><img src="images/时尚-202112.jpg" alt="" loading="lazy" /><div class="lb-year">Winter 21</div></div>
+      <div class="lb-card"><img src="images/时尚-202606.jpg" alt="" loading="lazy" /><div class="lb-year">2026</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="vinyl" class="spacer" style="padding-top:0">
+  <div class="container vinyl-inner">
+    <div class="rv">
+      <div class="vinyl-player" id="recordPlayer">
+        <div class="record" id="record">
+          <div class="label c1" id="recordLabel">VINYL</div>
+        </div>
+        <div class="stack" id="vinylStack">
+          <div class="s active" data-idx="0"></div>
+          <div class="s" data-idx="1"></div>
+          <div class="s" data-idx="2"></div>
+        </div>
+        <audio id="vinylAudio" preload="none" src="music/first-love.mp3"></audio>
+      </div>
+    </div>
+    <div class="vinyl-text">
+      <div class="rv"><div class="section-eyebrow">On rotation</div></div>
+      <div class="vinyl-quote rv rv-1">Music is the other ink.</div>
+      <div class="vinyl-text-body rv rv-2">Three records. One needle. Infinite rotation.</div>
+      <div class="vinyl-track rv rv-3" id="vinylTrack">Now playing: <span class="song">宇多田ヒカル - First Love</span></div>
+      <button class="vinyl-toggle rv rv-4" id="vinylToggle">▶ Play</button>
+    </div>
+  </div>
+</section>
+
+<section id="connect" class="spacer" style="padding-top:0">
+  <div class="container connect-outer">
+    <div class="rv">
+      <div class="connect-title">Find me <span class="hl">online</span></div>
+      <p class="connect-sub">Follow the work, reach out for a collaboration, or just say hi.</p>
+    </div>
+    <div class="social-grid rv rv-1">
+      <div class="social-card">
+        <div class="s-icon" style="color:var(--red)">📕</div>
+        <div class="s-name">小红书</div>
+        <div class="s-handle">Error404_x3vil</div>
+      </div>
+      <div class="social-card">
+        <div class="s-icon" style="color:var(--cyan)">🎵</div>
+        <div class="s-name">抖音</div>
+        <div class="s-handle">X-3VIL</div>
+      </div>
+    </div>
+    <div class="rv rv-2">
+      <div class="connect-location">📍 Hangzhou, China</div>
+    </div>
+  </div>
+</section>
+
+<footer class="container">
+  <p>X-3VIL &copy; 2026 &middot; Ink on skin, ink on paper &middot; 01.27</p>
+</footer>
+
+<script>
+(function(){
+  const dot=document.getElementById('cdot'),ring=document.getElementById('cring');
+  if(dot&&ring){
+    let mx=0,my=0,ringX=0,ringY=0;
+    document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px'});
+    const ringSmooth=()=>{ringX+=(mx-ringX)*.12;ringY+=(my-ringY)*.12;ring.style.left=ringX+'px';ring.style.top=ringY+'px';requestAnimationFrame(ringSmooth)};
+    ringSmooth();
+    document.querySelectorAll('a,button,.cell,.social-card,.lb-card,.as-card,.studio-grid img,.studio-hero,.record,.vinyl-toggle').forEach(el=>{
+      el.addEventListener('mouseenter',()=>ring.classList.add('grow'));
+      el.addEventListener('mouseleave',()=>ring.classList.remove('grow'));
+    });
+  }
+
+  const subEl=document.getElementById('heroSub');
+  if(subEl){
+    const phrases=['January 27 · Always remembered.','Anime illustrator & tattoo artist.','Hand-drawn scrolls, custom ink.'];
+    let pi=0,ci=0,scrambleTimer;
+    const chars='!<>-_\\/[]{}_+=*^?#________';
+    function update(){
+      const ph=phrases[pi];const span=subEl.querySelector('span');
+      let frame=0;clearInterval(scrambleTimer);
+      const s=()=>{
+        let out='';for(let i=0;i<ph.length;i++){if(i<ci)out+=ph[i];else out+=chars[Math.floor(Math.random()*chars.length)];}
+        span.textContent=out;
+        if(frame>=3){ci++;frame=0}else frame++;
+        if(ci>ph.length){ci=0;pi=(pi+1)%phrases.length;clearInterval(scrambleTimer);setTimeout(update,3000);return}
+        scrambleTimer=setTimeout(s,60);
+      };s();
+    }
+    update();
+  }
+
+  const kine=document.getElementById('kine');
+  if(kine){const t='Hangzhou · Anime · Ink';kine.innerHTML=t.split('').map((c,i)=>'<span class="char" style="animation-delay:'+(i*.04)+'s">'+(c===' '?' ':c)+'</span>').join('');}
+
+  const artScroll=document.getElementById('artScroll');
+  if(artScroll){const w=document.getElementById('artScrollWrap');w.addEventListener('mouseenter',()=>artScroll.classList.add('paused'));w.addEventListener('mouseleave',()=>artScroll.classList.remove('paused'));}
+
+  const lb=document.getElementById('lightbox');
+  if(lb){
+    const li=document.getElementById('lbImg'),lc=document.getElementById('lbClose'),lp=document.getElementById('lbPrev'),ln=document.getElementById('lbNext'),lct=document.getElementById('lbCounter');
+    const cards=document.querySelectorAll('.as-card');const srcs=[...new Set(Array.from(cards).map(c=>c.querySelector('img').src))];let li2=0;
+    function o(i){li2=i;li.src=srcs[li2];lct.textContent=(li2+1)+' / '+srcs.length;lb.classList.add('open');document.body.style.overflow='hidden'}
+    function c2(){lb.classList.remove('open');document.body.style.overflow=''}
+    function n(d){li2=(li2+d+srcs.length)%srcs.length;li.src=srcs[li2];lct.textContent=(li2+1)+' / '+srcs.length}
+    cards.forEach((c,i)=>c.addEventListener('click',()=>o(i)));
+    lc.addEventListener('click',c2);lb.addEventListener('click',e=>{if(e.target===lb)c2()});
+    lp.addEventListener('click',()=>n(-1));ln.addEventListener('click',()=>n(1));
+    document.addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='Escape')c2();if(e.key==='ArrowLeft')n(-1);if(e.key==='ArrowRight')n(1);});
+  }
+
+  const els=document.querySelectorAll('.rv:not(.in)');
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});},{rootMargin:'0px 0px -60px 0px',threshold:.05});
+    els.forEach(el=>io.observe(el));
+  }else{els.forEach(el=>el.classList.add('in'))}
+
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const id=a.getAttribute('href').slice(1);const t=document.getElementById(id);if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}})});
+
+  const nav=document.querySelector('nav');
+  window.addEventListener('scroll',()=>{const s=window.scrollY;nav.style.background=s>80?'rgba(5,5,5,.85)':'rgba(5,5,5,.5)';nav.style.borderColor=s>80?'rgba(255,255,255,.08)':'rgba(255,255,255,.06)';},{passive:true});
+
+  /* ── vinyl player with audio ── */
+  const vt=document.getElementById('vinylToggle');
+  const rec=document.getElementById('record');
+  const vLabel=document.getElementById('recordLabel');
+  const vTrack=document.getElementById('vinylTrack');
+  const dots=document.querySelectorAll('#vinylStack .s');
+  const audio=document.getElementById('vinylAudio');
+  const mp=document.getElementById('miniPlayer');
+  const mpLabel=document.getElementById('mpLabel');
+  const mpDot=document.getElementById('mpDot');
+  const tracks=[
+    {artist:'宇多田ヒカル',title:'First Love',file:'music/first-love.mp3'},
+    {artist:'NANA',title:'Lonely',file:'music/lonely.mp3'},
+    {artist:'Darren Hayes',title:'Creeping Up On You',file:'music/creeping.mp3'},
+  ];
+  let curTrack=0,playing=false;
+
+  function switchTrack(i){
+    curTrack=i;
+    const t=tracks[i];
+    if(vLabel)vLabel.className='label c'+(i+1);
+    if(vTrack)vTrack.innerHTML='Now playing: <span class="song">'+t.artist+' - '+t.title+'</span>';
+    dots.forEach((d,j)=>d.classList.toggle('active',j===i));
+    if(mpLabel)mpLabel.textContent=t.title;
+    if(mp)mp.title='Now playing: '+t.artist+' - '+t.title;
+    if(audio&&audio.src){
+      const wasPlaying=playing;
+      audio.src=t.file;
+      audio.load();
+      if(wasPlaying){audio.play().catch(()=>{});syncPlaying(true);}
+    }
+  }
+
+  function syncPlaying(state){
+    playing=state;
+    if(rec)rec.classList.toggle('paused',!state);
+    if(vt)vt.textContent=state?'⏸ Pause':'▶ Play';
+    if(mpDot)mpDot.classList.toggle('playing',state);
+  }
+
+  if(vt&&rec&&audio){
+    audio.addEventListener('ended',()=>switchTrack((curTrack+1)%tracks.length));
+    audio.addEventListener('error',()=>{});
+    vt.addEventListener('click',()=>{
+      if(playing){
+        audio.pause();syncPlaying(false);
+      }else{
+        audio.play().then(()=>syncPlaying(true)).catch(()=>{});
+      }
+    });
+  }
+  if(mp)mp.addEventListener('click',()=>{
+    if(!audio)return;
+    if(playing){
+      audio.pause();syncPlaying(false);
+    }else{
+      audio.play().then(()=>syncPlaying(true)).catch(()=>{});
+    }
+  });
+
+  dots.forEach(d=>d.addEventListener('click',()=>switchTrack(parseInt(d.dataset.idx))));
+})();
+</script>
+</div>
+</body>
+</html>
